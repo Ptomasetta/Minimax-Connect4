@@ -90,17 +90,41 @@ class GameState:
                     return 1 if val_sum > 0 else -1
 
         # check diags
+
+        # original code:
+        # for r in range(self.num_rows):
+        #     for c in range(self.num_cols):
+        #         if (r < self.num_rows-self.num_win+1) and (c < self.num_cols-self.num_win+1):
+        #             val_sum = sum([ self.board[r+d][c+d] for d in range(self.num_win) ])
+        #             if abs(val_sum) == self.num_win:
+        #                 return 1 if val_sum > 0 else -1
+        #
+        #         if (r > self.num_win-1) and (c > self.num_win-1):
+        #             val_sum = sum([ self.board[r-d][c-d] for d in range(self.num_win) ])
+        #             if abs(val_sum) == self.num_win:
+        #                 return 1 if val_sum > 0 else -1
+
+        # hard-coded to 4-in-a-row
         for r in range(self.num_rows):
             for c in range(self.num_cols):
-                if (r < self.num_rows-self.num_win+1) and (c < self.num_cols-self.num_win+1):
-                    val_sum = sum([ self.board[r+d][c+d] for d in range(self.num_win) ])
-                    if abs(val_sum) == self.num_win:
-                        return 1 if val_sum > 0 else -1
-
-                if (r > self.num_win-1) and (c > self.num_win-1):
-                    val_sum = sum([ self.board[r-d][c-d] for d in range(self.num_win) ])
-                    if abs(val_sum) == self.num_win:
-                        return 1 if val_sum > 0 else -1
+                if self.board[r][c] == 0:
+                    continue
+                count = 0
+                # Checks positive slope diagonals
+                if r + 3 < self.num_rows and c + 3 < self.num_cols:
+                    for i in range(1, 4):
+                        if self.board[r + i][c + i] == self.board[r][c]:
+                            count += 1
+                if count >= 3:
+                    return self.board[r][c]
+                count = 0
+                # Checks negative slope diagonals
+                if r + 3 < self.num_rows and c >= 3:
+                    for i in range(1, 4):
+                        if self.board[r + i][c - i] == self.board[r][c]:
+                            count += 1
+                if count >= 3:
+                    return self.board[r][c]
 
         # check for open spaces
         if self.is_full():
@@ -168,10 +192,10 @@ if __name__ == "__main__":
     play1 = agent_codes[sys.argv[1]]()
     play2 = agent_codes[sys.argv[2]]()
     depth_lim = None if len(sys.argv) < 4 else int(sys.argv[3])  # optional argument
-
-    test_board = GameState()
-    test_board.board = tests.board4 # added this to get tests to work
     
+    test_board = GameState()
+    test_board.board = tests.board2 # added this to get tests to work
+
     start_state = test_board  # change this to tests.board1 to use a test state instead of a blank board
 
     play_game(play1, play2, depth_lim, start_state)

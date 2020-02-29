@@ -12,14 +12,10 @@ class RandomAgent:
 class HumanAgent:
     """Prompts user to supply a valid move."""
     def get_move(self, state, depth=None):
-        move__state = state.successors()
-        moves = {}
-        for tup in move__state:
-            moves[tup[0]] = tup[1]
-        
-        prompt = "Kindly enter your move {}: ".format(sorted([move[0] for move in move__state]))
+        move__state = dict(state.successors())
+        prompt = "Kindly enter your move {}: ".format(sorted(move__state.keys()))
         move = int(input(prompt))
-        return move, moves[move]
+        return move, move__state[move]
 
 
 class ComputerAgent:
@@ -33,7 +29,7 @@ class ComputerAgent:
         best_state = None
 
         for move, state in state.successors():
-            util = self.minimax(state, depth) 
+            util = self.minimax(state, depth)
             if ((nextp == 1) and (util > best_util)) or ((nextp == -1) and (util < best_util)):
                 best_util, best_move, best_state = util, move, state
         return best_move, best_state
@@ -50,34 +46,27 @@ class ComputerAgent:
 
         Returns: the minimax utility value of the state
         """
-
-        #have to deal with depth for when not None?
-
+        
         win = state.winner() 
         nextp = state.next_player() # whos turn it is 
-
-        if win is not None: # reaches a terminal state
-            print("Terminl state detected: ", win)
+        if depth == 0: 
+            return self.evaluation(state)
+        elif win is not None: # reaches a terminal state
             return win # 1 if Player 1 wins, -1 if Player 2 wins, 0 if the board is full (indicating a tie)
-        elif win == 1: # MAX is to move in state
-            minimax_value = -2
+        elif nextp == 1: # MAX is to move in state
+            max_value = -2
             for move, child in state.successors():
-                util = self.minimax(child, depth) 
-                minimax_value = max(minimax_value, util)
-            return minimax_value
+                util = self.minimax(child, depth) if depth is None else self.minimax(child, depth - 1)
+                max_value = max(max_value, util)
+            return max_value
         else: # MIN is to move in state
-            minimax_value = 2
+            min_value = 2
             for move, child in state.successors():
-                util = self.minimax(child, depth) 
-                minimax_value = min(minimax_value, util)
-            return minimax_value
+                util = self.minimax(child, depth) if depth is None else self.minimax(child, depth - 1)
+                min_value = min(min_value, util)
+            return min_value
 
- 
-
-
-        return 42  # Change this line!
-
-    def evaluation(self, state): #zzz must be O(1)
+    def evaluation(self, state):
         """Estimate the utility value of the game state based on features.
 
         N.B.: This method must run in O(1) time!
@@ -90,7 +79,7 @@ class ComputerAgent:
         #
         # Fill this in!
         #
-        return 19  # Change this line!
+        return -1*state.next_player() # change
 
 
 class ComputerPruneAgent(ComputerAgent):
@@ -100,7 +89,7 @@ class ComputerPruneAgent(ComputerAgent):
         util, pruned = self.minimax_prune(state, depth)
         return util
 
-    def minimax_prune(self, state, depth):
+    def minimax_prune(self, state, depth, alpha=-2, beta=2, pruned=[]):
         """Determine the minimax utility value the given state using alpha-beta pruning.
 
         N.B.: When exploring the game tree and expanding nodes, you must consider the child nodes
@@ -113,9 +102,45 @@ class ComputerPruneAgent(ComputerAgent):
         Returns: the minimax utility value of the state, along with a list of state objects that
             were not expanded due to pruning.
         """
-        #
-        # Fill this in!
-        #
-        return 44, []  # Change this line!
 
-
+        # added optional arguents to take care of alpha and beta
+        # pruned is the list of list of state objects that were not expanded due to pruning
+        
+        win = state.winner() 
+        nextp = state.next_player() # whos turn it is 
+        if depth == 0: 
+            pruned = list(dict.fromkeys(pruned))
+            return self.evaluation(state), pruned
+        elif win is not None: # reaches a terminal state
+            pruned = list(dict.fromkeys(pruned))
+            return win, pruned # 1 if Player 1 wins, -1 if Player 2 wins, 0 if the board is full (indicating a tie)
+        elif nextp == 1: # MAX is to move in state
+            max_value = -2
+            successors = state.successors()
+            for move, child in successors:
+                successors.pop(0) # remove elemnt that was expandded from current successors list
+                util = self.minimax_prune(child, depth, alpha, beta)[0] if depth is None else self.minimax_prune(child, depth - 1, alpha, beta)[0]
+                max_value = max(max_value, util)
+                alpha = max(alpha, util)
+                if beta <= alpha:
+                    extend_list = []
+                    for item in successors: extend_list.append(item[1]) # creates a list of only the states 
+                    pruned.extend(extend_list) # appends states that were not expanded to pruned
+                    break
+            pruned = list(dict.fromkeys(pruned)) # removes duplicates from pruned
+            return max_value, pruned
+        else: # MIN is to move in state
+            min_value = 2
+            successors = state.successors()
+            for move, child in successors:
+                successors.pop(0)
+                util = self.minimax_prune(child, depth, alpha, beta)[0] if depth is None else self.minimax_prune(child, depth - 1, alpha, beta)[0]
+                min_value = min(min_value, util)
+                beta = min(beta, util)
+                if beta <= alpha:
+                    extend_list = []
+                    for item in successors: extend_list.append(item[1]) # creates a list of only the states 
+                    pruned.extend(extend_list) # appends states that were not expanded to pruned
+                    break
+            pruned = list(dict.fromkeys(pruned))
+            return min_value, pruned
