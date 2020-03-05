@@ -194,9 +194,9 @@ if __name__ == "__main__":
     depth_lim = None if len(sys.argv) < 4 else int(sys.argv[3])  # optional argument
     
     test_board = GameState()
-    test_board.board = tests.board2 # added this to get tests to work
+    test_board.board = tests.board1 # added this to get tests to work
 
-    start_state = test_board  # change this to tests.board1 to use a test state instead of a blank board
+    start_state = None  # change this to tests.board1 to use a test state instead of a blank board
 
     play_game(play1, play2, depth_lim, start_state)
 
